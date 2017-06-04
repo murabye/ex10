@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Threading.Tasks;
+using MyLib;
 
 // без возможности в одной строке одинаковую степень
 
@@ -17,6 +18,22 @@ namespace ex10
         public MyHashTable()
         {
             table = new Variable[_capacity];
+        }
+        public void Fill()
+        {
+            var count = Ask.Num("Введите количество членов полинома: ");
+
+            for (var i = 0; i < count; i++)
+            {
+                var pow = Ask.Num("Введите степень: ");
+                var coef = Ask.Num("Введите коэффициент: ");
+
+                Add(new Variable(coef, pow));
+                Console.WriteLine();
+            }
+
+            Console.WriteLine();
+            Console.WriteLine();
         }
 
         public void Add(Variable added)
@@ -38,33 +55,73 @@ namespace ex10
         public void Plus(Variable added)
         {
             var cur = table[added.GetHashCode()];
-            while ((cur != null))
+            while (cur != null)
             {
                 if (cur.Power == added.Power)
                 {
                     cur.Coefficient += added.Coefficient;
                     return;
-                }
+                } 
                 cur = cur.next;
             }
-
-          
+            Add(added);
         }
+        public void Refresh()
+        {
+            for (var i=0; i < 10; i++)
+            {
+                var start = table[i];
+                var prev = start;
 
-        public static MyHashTable operator +(MyHashTable a, MyHashTable b)
+                var cur = start != null ? start.next : null;
+
+                while (cur != null)
+                {
+                    if (cur.Coefficient == 0)
+                    {
+                        prev.next = cur.next;
+                        cur = cur.next;
+                    }
+                    else
+                    {
+                        prev = cur;
+                        cur = cur.next;
+                    }
+                }
+
+                if (start != null && start.Coefficient == 0)
+                {
+                    table[i] = start.next;
+                }
+            }
+        }
+        
+        public static MyHashTable ppp(MyHashTable a, MyHashTable b)
         {
             var c = new MyHashTable();
             foreach (var point in a.table)
                 if (point != null) c.Add(point);        // все точки из списка a добавить в ответ
 
             foreach (var point in b.table)
-            {
                 if (point != null) c.Plus(point);
-            }
 
+            c.Refresh();
             return c;
         }
+
+        public override string ToString()
+        {
+            var ans = "";
+            foreach (var obj in table)
+            {
+                if (obj != null)
+                    ans += obj.ToString() + "\n";
+            }
+
+            return ans;
+        }
     }
+
     class Variable
     {
         public int Coefficient { get; set; }
@@ -76,7 +133,6 @@ namespace ex10
             this.Coefficient = coefficient;
             this.Power = power;
         }
-
         public Variable(string arg)
         {
             var args = arg.Split(' ');
@@ -88,7 +144,6 @@ namespace ex10
         {
             return Power % 10;
         }
-
         public override string ToString()
         {
             return Power + " " + Coefficient;
@@ -99,15 +154,21 @@ namespace ex10
     {
         static void Main()
         {
-            var polynom1 = new MyHashTable();
-            var polynom2 = new MyHashTable();
+            while (true)
+            {
+                var polynom1 = new MyHashTable();
+                var polynom2 = new MyHashTable();
+                polynom1.Fill();
+                polynom2.Fill();
 
-            ReadFile("poly1.txt", polynom1);
-            ReadFile("poly2.txt", polynom2);
+                var ans = MyHashTable.ppp(polynom1, polynom2);
+                Console.WriteLine("Результат: ");
+                Console.WriteLine(ans);
+                
+                OC.Stay();
+            }
 
-            var ans = polynom1 + polynom2;
 
-            WriteFile("ans.txt", ans);
         }
 
         static void ReadFile(string path, MyHashTable table)
