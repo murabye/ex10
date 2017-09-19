@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.IO;
-using System.Threading.Tasks;
 using MyLib;
 
 // без возможности в одной строке одинаковую степень
@@ -122,6 +118,9 @@ namespace ex10
         }
     }
 
+
+
+
     class Variable
     {
         public int Coefficient { get; set; }
@@ -130,8 +129,8 @@ namespace ex10
 
         public Variable(int coefficient, int power)
         {
-            this.Coefficient = coefficient;
-            this.Power = power;
+            Coefficient = coefficient;
+            Power = power;
         }
         public Variable(string arg)
         {
@@ -143,6 +142,10 @@ namespace ex10
         public override int GetHashCode()
         {
             return Power % 10;
+        }
+        public int GetHashCode(int capacity)
+        {
+            return Power % capacity;
         }
         public override string ToString()
         {
