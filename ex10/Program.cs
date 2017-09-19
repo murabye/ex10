@@ -2,124 +2,90 @@
 using System.IO;
 using MyLib;
 
-// без возможности в одной строке одинаковую степень
-
 namespace ex10
 {
-    class MyHashTable
+    class Polynom
     {
-        private int _capacity = 10;
-        public Variable[] table { get; set; }
+        public Variable Root { get; set; }
 
-        public MyHashTable()
+        public Polynom(Variable root)
         {
-            table = new Variable[_capacity];
+            Root = root;
         }
-        public void Fill()
+        public Polynom()
         {
-            var count = Ask.Num("Введите количество членов полинома: ");
-
-            for (var i = 0; i < count; i++)
-            {
-                var pow = Ask.Num("Введите степень: ");
-                var coef = Ask.Num("Введите коэффициент: ");
-
-                Add(new Variable(coef, pow));
-                Console.WriteLine();
-            }
-
-            Console.WriteLine();
-            Console.WriteLine();
+            Root = null;
         }
 
-        public void Add(Variable added)
+        public void Add(Variable variable)
         {
-            var cur = table[added.GetHashCode()];
-
-            if (cur == null) { 
-                table[added.GetHashCode()] = added;
+            if (Root == null) {
+                Root = variable;
                 return;
             }
 
-            while (cur.next != null)
-            {
-                cur = cur.next;
-            }
-            
-            cur.next = added;
-        }
-        public void Plus(Variable added)
-        {
-            var cur = table[added.GetHashCode()];
+            var cur = Root;
+            Variable prev = null;
+
             while (cur != null)
             {
-                if (cur.Power == added.Power)
+                if (variable.Power > cur.Power)
                 {
-                    cur.Coefficient += added.Coefficient;
-                    return;
-                } 
-                cur = cur.next;
-            }
-            Add(added);
-        }
-        public void Refresh()
-        {
-            for (var i=0; i < 10; i++)
-            {
-                var start = table[i];
-                var prev = start;
-
-                var cur = start != null ? start.next : null;
-
-                while (cur != null)
+                    variable.next = cur;
+                    if (prev != null)
+                        prev.next = variable;
+                    else
+                        Root = variable;
+                    break;
+                }
+                else if (variable.Power == cur.Power)
                 {
+                    cur.Coefficient += variable.Coefficient;
                     if (cur.Coefficient == 0)
                     {
-                        prev.next = cur.next;
-                        cur = cur.next;
+                        if (prev != null)
+                            prev.next = cur.next;   
+                        else
+                            Root = Root.next;
                     }
-                    else
-                    {
-                        prev = cur;
-                        cur = cur.next;
-                    }
+
+                    break;
                 }
 
-                if (start != null && start.Coefficient == 0)
-                {
-                    table[i] = start.next;
-                }
+                prev = cur;
+                cur = cur.next;
             }
         }
-        
-        public static MyHashTable ppp(MyHashTable a, MyHashTable b)
+
+        public static Polynom operator +(Polynom one, Polynom two)
         {
-            var c = new MyHashTable();
-            foreach (var point in a.table)
-                if (point != null) c.Add(point);        // все точки из списка a добавить в ответ
+            var answ = new Polynom();
+            Transact(one, answ);
+            Transact(two, answ);
 
-            foreach (var point in b.table)
-                if (point != null) c.Plus(point);
+            return answ;
+        }
 
-            c.Refresh();
-            return c;
+        public static void Transact(Polynom from, Polynom to)
+        {
+            var cur = from.Root;
+            Variable next = null;
+            if (cur != null) next = cur.next;
+            to.Add(cur);
+
+            while (next != null)
+            {
+                cur = next;
+                next = next.next;
+                to.Add(cur);
+            }
         }
 
         public override string ToString()
         {
-            var ans = "";
-            foreach (var obj in table)
-            {
-                if (obj != null)
-                    ans += obj.ToString() + "\n";
-            }
-
-            return ans;
+            return Root.ToString() + " + ...";
         }
     }
-
-
-
 
     class Variable
     {
@@ -132,24 +98,14 @@ namespace ex10
             Coefficient = coefficient;
             Power = power;
         }
-        public Variable(string arg)
+        public Variable(string coefficient, string power)
         {
-            var args = arg.Split(' ');
-            Coefficient = Int32.Parse(args[0]);
-            Power = Int32.Parse(args[1]);
-        }
-
-        public override int GetHashCode()
-        {
-            return Power % 10;
-        }
-        public int GetHashCode(int capacity)
-        {
-            return Power % capacity;
+            Coefficient = Int32.Parse(coefficient);
+            Power = Int32.Parse(power);
         }
         public override string ToString()
         {
-            return Power + " " + Coefficient;
+            return "(" + Coefficient + "x^" + Power + ")";
         }
     }
 
@@ -157,44 +113,60 @@ namespace ex10
     {
         static void Main()
         {
-            while (true)
+            try
             {
-                var polynom1 = new MyHashTable();
-                var polynom2 = new MyHashTable();
-                polynom1.Fill();
-                polynom2.Fill();
+                var one = ReadFile("PowerOne.txt", "CoefOne.txt");
+                var two = ReadFile("PowerTwo.txt", "CoefTwo.txt");
 
-                var ans = MyHashTable.ppp(polynom1, polynom2);
-                Console.WriteLine("Результат: ");
-                Console.WriteLine(ans);
-                
-                OC.Stay();
+                var sum = one + two;
+
+                WriteFile("output.txt", sum);
             }
-
-
+            catch (Exception e)
+            {
+                WriteEx("output.txt", e);
+            }
         }
 
-        static void ReadFile(string path, MyHashTable table)
+        static Polynom ReadFile(string pathPow, string pathCoef)
         {
-            var reader = new StreamReader(path);
-            var cur = reader.ReadLine();
+            var readerPow = new StreamReader(pathPow);
+            var readerCoef = new StreamReader(pathCoef);
 
-            while (cur != String.Empty)
+            var curPow = readerPow.ReadLine();
+            var curCoef = readerCoef.ReadLine();
+            var polynom = new Polynom();
+
+            while (!string.IsNullOrEmpty(curPow) && !string.IsNullOrEmpty(curCoef))
             {
-                table.Add(new Variable(cur));
+                polynom.Add(new Variable(curCoef, curPow));
+                curPow = readerPow.ReadLine();
+                curCoef = readerCoef.ReadLine();
             }
 
-            reader.Close();
+            readerPow.Close();
+            readerCoef.Close();
+
+            return polynom;
         }
-        static void WriteFile(string path, MyHashTable table)
+        static void WriteFile(string path, Polynom poly)
         {
             var writer = new StreamWriter(path);
+            var root = poly.Root;
 
-            foreach (var obj in table.table)
+            while (root != null)
             {
-                writer.WriteLine(obj);
+                writer.WriteLine(root.Power + " " + root.Coefficient);
+                root = root.next;
             }
+
+            writer.Close();
         }
-        
+        static void WriteEx(string path, Exception e)
+        {
+            var writer = new StreamWriter(path);
+            writer.WriteLine(e.Message);
+            writer.Close();
+        }
     }
 }
